@@ -106,14 +106,14 @@ extern struct MIB_INFO_STAT g_arMibInfo[ENUM_BAND_NUM];
 #define DBG_CLASS_MASK          BITS(0, 7)
 
 #define DBG_LOG_LEVEL_DEFAULT \
-	(DBG_CLASS_ERROR | \
+	(DBG_CLASS_ERROR)
+#define DBG_LOG_LEVEL_MORE \
+	(DBG_LOG_LEVEL_DEFAULT | \
+	DBG_CLASS_TRACE | \
 	DBG_CLASS_WARN | \
 	DBG_CLASS_STATE | \
 	DBG_CLASS_EVENT | \
 	DBG_CLASS_INFO)
-#define DBG_LOG_LEVEL_MORE \
-	(DBG_LOG_LEVEL_DEFAULT | \
-	DBG_CLASS_TRACE)
 #define DBG_LOG_LEVEL_EXTREME \
 	(DBG_LOG_LEVEL_MORE | \
 	DBG_CLASS_LOUD)
@@ -557,12 +557,7 @@ void halShowPleInfo(IN struct ADAPTER *prAdapter,
 	u_int8_t fgDumpTxd);
 void halShowDmaschInfo(IN struct ADAPTER *prAdapter);
 void haldumpMacInfo(IN struct ADAPTER *prAdapter);
-void halGetPleTxdInfo(IN struct ADAPTER *prAdapter,
-		      uint32_t fid, uint32_t *result);
-void halGetPsePayload(IN struct ADAPTER *prAdapter,
-		      uint32_t fid, uint32_t *result);
 void halDumpTxdInfo(IN struct ADAPTER *prAdapter, uint32_t *tmac_info);
-void halShowLitePleInfo(IN struct ADAPTER *prAdapter);
 void halShowTxdInfo(
 	struct ADAPTER *prAdapter,
 	u_int32_t fid);

@@ -11,20 +11,13 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 # published by the Free Software Foundation.
 
 ###############################################################################
-# Necessary Check
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ifeq ($(CONFIG_MTK_GPS_SUPPORT), y)
-
-ifneq ($(KERNEL_OUT),)
-    ccflags-y += -imacros $(KERNEL_OUT)/include/generated/autoconf.h
-endif
 
 ifndef TOP
     TOP := $(srctree)/..
 endif
-ifeq ($(TARGET_BUILD_VARIANT),$(filter $(TARGET_BUILD_VARIANT),userdebug user))
-    ldflags-y += -s
-endif
+ldflags-y += -s
 
 # Force build fail on modpost warning
 KBUILD_MODPOST_FAIL_ON_WARNINGS := y
@@ -62,7 +55,6 @@ ccflags-y += -I$(srctree)/drivers/devfreq
 ###############################################################################
 
 MODULE_NAME := gps_drv
-
 obj-y += $(MODULE_NAME).o
 
 GPS_DRV_CONTROL_LNA := n
