@@ -1,27 +1,27 @@
-name: Build Kernel
+name: Compile Kernel
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    name: Compile Kernel
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
 
-    - name: Clone toolchain (proton clang)
+    - name: Clone Proton Clang
       run: |
-        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
 
     - name: Build kernel
       run: |
@@ -37,22 +37,18 @@ jobs:
           HOSTCXX=g++ \
           LD=ld.lld
 
-    - name: Check output
-      run: |
-        ls out/arch/arm64/boot/
-
     - name: Clone AnyKernel3
       run: |
-        git clone https://github.com/Kairellll/kernel-rm6785.git -b main anykernel
-        mv out/arch/arm64/boot/Image.gz-dtb anykernel/AnyKernel3/
+        git clone https://github.com/osm0sis/AnyKernel3.git anykernel
+        cp out/arch/arm64/boot/Image anykernel/
 
-    - name: Zip kernel
+    - name: Make flashable ZIP
       run: |
-        cd anykernel/AnyKernel3
-        zip -r9 ../kernel-rm6785.zip ./*
+        cd anykernel
+        zip -r9 ../kernel.zip *
 
-    - name: Upload kernel
-      uses: actions/upload-artifact@v3
+    - name: Upload flashable ZIP
+      uses: actions/upload-artifact@v4
       with:
-        name: Kernel-rm6785
-        path: anykernel/kernel-rm6785.zip
+        name: Kernel-Flashable-ZIP
+        path: kernel.zip
