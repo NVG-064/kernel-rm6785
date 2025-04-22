@@ -3,8 +3,15 @@
 #define __ASM_STACK_POINTER_H
 
 /*
- * how to get the current stack pointer from C
+ * How to get the current stack pointer from C
+ * Clang does not support global register variable for 'sp'
+ * So we define it as an inline function
  */
-register unsigned long current_stack_pointer asm ("sp");
+static inline unsigned long get_current_sp(void)
+{
+    unsigned long sp;
+    asm volatile("mov %0, sp" : "=r" (sp));
+    return sp;
+}
 
 #endif /* __ASM_STACK_POINTER_H */
