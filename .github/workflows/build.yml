@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-        
+
       - name: Set up environment
         run: |
           sudo apt-get update
@@ -24,9 +24,12 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 
-      - name: Clone KernelSU
+      - name: Clone KernelSU and fix submodule issue
         run: |
           git clone https://github.com/tiann/KernelSU.git
+          # Tambahkan .gitmodules agar tidak error
+          echo -e '[submodule "KernelSU"]\n  path = KernelSU\n  url = https://github.com/tiann/KernelSU.git' > .gitmodules
+          # Tambahkan config ke defconfig
           echo 'CONFIG_KSU=y' >> arch/arm64/configs/custom_defconfig
 
       - name: Build kernel
