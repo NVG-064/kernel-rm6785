@@ -26,7 +26,7 @@ jobs:
 
       - name: Clone KernelSU
         run: |
-          git clone https://github.com/KernelSU/KernelSU
+          git clone https://github.com/tiann/KernelSU.git
           echo 'CONFIG_KSU=y' >> arch/arm64/configs/custom_defconfig
 
       - name: Build kernel
