@@ -14,22 +14,19 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
+        
       - name: Set up environment
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
 
-      - name: Clone Proton Clang
+      - name: Clone Clang 13 (ZyCromerZ)
         run: |
-          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+          git clone --depth=1 -b 13 https://github.com/ZyCromerZ/Clang.git clang
 
-      - name: Clone KernelSU and fix submodule issue
+      - name: Clone KernelSU
         run: |
-          git clone https://github.com/tiann/KernelSU.git
-          # Tambahkan .gitmodules agar tidak error
-          echo -e '[submodule "KernelSU"]\n  path = KernelSU\n  url = https://github.com/tiann/KernelSU.git' > .gitmodules
-          # Tambahkan config ke defconfig
+          git clone --depth=1 https://github.com/tiann/KernelSU.git
           echo 'CONFIG_KSU=y' >> arch/arm64/configs/custom_defconfig
 
       - name: Build kernel
