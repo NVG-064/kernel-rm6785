@@ -1,62 +1,60 @@
-name: Build Kernel
+name: Kernel Build
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch:
 
-jobs:
-  build:
-    name: Compile Kernel
-    runs-on: ubuntu-latest
+jobs: build: runs-on: ubuntu-latest name: Build Kernel using custom_defconfig
 
-    steps:
-      - name: Checkout Kernel Source
-        uses: actions/checkout@v3
+steps:
+- name: Checkout source
+  uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
+- name: Set up environment
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
 
-      - name: Clone Toolchain (Proton Clang)
-        run: |
-          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+- name: Clone toolchain (Proton Clang)
+  run: |
+    git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 
-      - name: Build Kernel
-        run: |
-          export PATH="${PWD}/clang/bin:$PATH"
-          export ARCH=arm64
-          export SUBARCH=arm64
+- name: Set environment variables
+  run: |
+    echo "PATH=$PWD/clang/bin:$PATH" >> $GITHUB_ENV
+    echo "ARCH=arm64" >> $GITHUB_ENV
+    echo "SUBARCH=arm64" >> $GITHUB_ENV
+    echo "KBUILD_BUILD_USER=github" >> $GITHUB_ENV
+    echo "KBUILD_BUILD_HOST=actions" >> $GITHUB_ENV
 
-          make O=out ARCH=arm64 custom_defconfig
-          cp arch/arm64/configs/custom_defconfig out/.config
-          make O=out ARCH=arm64 olddefconfig
-          make O=out -j$(nproc) ARCH=arm64 \
-            CC=clang \
-            HOSTCC=gcc \
-            HOSTCXX=g++ \
-            LD=ld.lld
+- name: Use custom_defconfig
+  run: |
+    mkdir -p out
+    cp arch/arm64/configs/custom_defconfig out/.config
+    make O=out olddefconfig
 
-      - name: Clone AnyKernel3
-        run: |
-          git clone https://github.com/osm0sis/AnyKernel3.git
-          cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+- name: Build kernel
+  run: |
+    make -j$(nproc) O=out \
+      ARCH=arm64 \
+      CC=clang \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+      HOSTCC=gcc \
+      HOSTCXX=g++ \
+      LD=ld.lld
 
-      - name: Pack ZIP
-        run: |
-          cd AnyKernel3
-          zip -r9 ../kernel-rm6785.zip ./*
+- name: Clone AnyKernel3
+  run: |
+    git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+    cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: kernel-rm6785
-          path: kernel-rm6785.zip
+- name: Create flashable ZIP
+  run: |
+    cd AnyKernel3
+    zip -r9 ../kernel.zip *
 
-      - name: GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "build-$(date +'%Y%m%d')"
-          name: "Kernel Build $(date +'%Y-%m-%d')"
-          files: kernel-rm6785.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Upload kernel zip
+  uses: actions/upload-artifact@v4
+  with:
+    name: kernel-flashable
+    path: kernel.zip
+
