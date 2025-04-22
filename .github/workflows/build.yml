@@ -4,6 +4,9 @@ env:
   OUT_DIR: "out"
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       kernelSourceURL:
