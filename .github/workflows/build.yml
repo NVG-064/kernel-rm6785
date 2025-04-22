@@ -1,59 +1,52 @@
-name: Build Kernel RM6785
+name: "Build kernels"
 
-env: OUT_DIR: out
+env: OUT_DIR: "out"
 
-on: workflow_dispatch: inputs: kernelSourceName: description: "Name of kernel source" required: true default: "kernel-rm6785" kernelSourceURL: description: "URL of kernel source" required: true default: "https://github.com/Kairellll/kernel-rm6785" kernelBranch: description: "Branch to build" required: true default: "main" withKernelSU: description: "Include KernelSU support" required: false type: boolean default: true
+on: workflow_dispatch: inputs: kernelSourceURL: description: "Custom kernel source URL" required: true type: string default: "https://github.com/realme-mt6785-devs/android_kernel_realme_mt6785" kernelBranch: description: "Branch kernel" required: true type: string default: "main" kernelSourceName: description: "Name folder source" required: true type: string default: "kernel" kernelDevice: description: "Device codename" required: true type: string default: "rm6785" clangURL: description: "Clang URL" required: true type: string default: "https://github.com/kdrag0n/proton-clang.git"
 
-jobs: build: name: Compile Kernel runs-on: ubuntu-latest steps: - name: Checkout source uses: actions/checkout@v4
+jobs: build: runs-on: ubuntu-latest steps: - name: Checkout uses: actions/checkout@v4
 
 - name: Install dependencies
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y bc bison build-essential cpio curl flex git \
+      kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
 
-- name: Clone toolchain (proton clang)
-  run: |
-    git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+  - name: Clone kernel source
+    run: |
+      git clone --depth=1 --branch ${{ github.event.inputs.kernelBranch }} ${{ github.event.inputs.kernelSourceURL }} ${{ github.event.inputs.kernelSourceName }}
 
-- name: Build kernel
-  run: |
-    export PATH="${PWD}/clang/bin:$PATH"
-    export ARCH=arm64
-    export SUBARCH=arm64
+  - name: Clone clang
+    run: |
+      git clone --depth=1 ${{ github.event.inputs.clangURL }} clang
 
-    mkdir -p out
-    cp arch/arm64/configs/custom_defconfig out/.config
-    make O=out ARCH=arm64 olddefconfig
+  - name: Build kernel
+    run: |
+      export PATH="${PWD}/clang/bin:$PATH"
+      export ARCH=arm64
+      export SUBARCH=arm64
+      make -C ${{ github.event.inputs.kernelSourceName }} O=${{ env.OUT_DIR }} ARCH=arm64 custom_defconfig
+      cp ${{ github.event.inputs.kernelSourceName }}/arch/arm64/configs/custom_defconfig ${{ env.OUT_DIR }}/.config
+      make -C ${{ github.event.inputs.kernelSourceName }} O=${{ env.OUT_DIR }} ARCH=arm64 CC=clang olddefconfig
+      make -C ${{ github.event.inputs.kernelSourceName }} O=${{ env.OUT_DIR }} -j$(nproc) ARCH=arm64 CC=clang
 
-    if [ "${{ github.event.inputs.withKernelSU }}" == "true" ]; then
-      echo ">>> Cloning KernelSU..."
-      curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash
-    fi
+  - name: Check output
+    run: ls -al ${{ env.OUT_DIR }}/arch/arm64/boot
 
-    make -j$(nproc) O=out \
-      ARCH=arm64 \
-      CC=clang \
-      HOSTCC=gcc \
-      HOSTCXX=g++ \
-      LD=ld.lld
+  - name: Clone AnyKernel3
+    run: |
+      git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+      cp ${{ env.OUT_DIR }}/arch/arm64/boot/Image* AnyKernel3/ || true
+      cp ${{ env.OUT_DIR }}/arch/arm64/boot/dtbo.img AnyKernel3/ || true
 
-- name: Check output
-  run: |
-    ls out/arch/arm64/boot/
+  - name: Create flashable zip
+    run: |
+      cd AnyKernel3
+      zip -r9 ../kernel-flashable.zip .
 
-- name: Clone AnyKernel3
-  run: |
-    git clone --depth=1 https://github.com/Kairellll/AnyKernel3.git
-    cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
-
-- name: Zip kernel
-  run: |
-    cd AnyKernel3
-    zip -r9 ../Kernel-RM6785.zip ./*
-
-- name: Upload kernel zip
-  uses: actions/upload-artifact@v3
-  with:
-    name: Kernel-RM6785
-    path: Kernel-RM6785.zip
+  - name: Upload zip artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: kernel-flashable
+      path: kernel-flashable.zip
 
