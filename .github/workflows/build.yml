@@ -31,7 +31,11 @@ jobs:
         make O=out ARCH=arm64 custom_defconfig
         cp arch/arm64/configs/custom_defconfig out/.config
         make O=out -j$(nproc) ARCH=arm64 CC=clang olddefconfig
-        make O=out -j$(nproc) ARCH=arm64 CC=clang
+        make O=out -j$(nproc) ARCH=arm64 \
+          CC=clang \
+          HOSTCC=gcc \
+          HOSTCXX=g++ \
+          LD=ld.lld
 
     - name: Check output
       run: |
@@ -48,7 +52,7 @@ jobs:
         zip -r9 ../kernel-rm6785.zip ./*
 
     - name: Upload kernel
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: Kernel-rm6785
         path: anykernel/kernel-rm6785.zip
