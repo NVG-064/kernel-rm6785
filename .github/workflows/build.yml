@@ -19,7 +19,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
 
-    - name: Clone toolchain (Proton Clang)
+    - name: Clone toolchain (proton clang)
       run: |
         git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 
@@ -48,7 +48,7 @@ jobs:
         zip -r9 ../kernel-rm6785.zip ./*
 
     - name: Upload kernel
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Kernel-rm6785
         path: anykernel/kernel-rm6785.zip
