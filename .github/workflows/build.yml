@@ -1,0 +1,54 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Compile Kernel
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential cpio curl flex git kmod libssl-dev libncurses5-dev libelf-dev python3 unzip zip
+
+    - name: Clone toolchain (proton clang)
+      run: |
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+
+    - name: Build kernel
+      run: |
+        export PATH="${PWD}/clang/bin:$PATH"
+        export ARCH=arm64
+        export SUBARCH=arm64
+        make O=out ARCH=arm64 custom_defconfig
+        cp arch/arm64/configs/custom_defconfig out/.config
+        make O=out -j$(nproc) ARCH=arm64 CC=clang olddefconfig
+        make O=out -j$(nproc) ARCH=arm64 CC=clang
+
+    - name: Check output
+      run: |
+        ls out/arch/arm64/boot/
+
+    - name: Clone AnyKernel3
+      run: |
+        git clone https://github.com/Kairellll/kernel-rm6785.git -b main anykernel
+        mv out/arch/arm64/boot/Image.gz-dtb anykernel/AnyKernel3/
+
+    - name: Zip kernel
+      run: |
+        cd anykernel/AnyKernel3
+        zip -r9 ../kernel-rm6785.zip ./*
+
+    - name: Upload kernel
+      uses: actions/upload-artifact@v3
+      with:
+        name: Kernel-rm6785
+        path: anykernel/kernel-rm6785.zip
